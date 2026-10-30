@@ -10,7 +10,7 @@ from bot.handlers.user import router as user_router
 from bot.middlewares.db import DbSessionMiddleware
 from config.settings import settings
 from database.engine import engine, init_db
-
+from services.books_api import books_api
 
 async def main() -> None:
     logging.basicConfig(
@@ -29,13 +29,14 @@ async def main() -> None:
     )
 
     dp = Dispatcher()
-    dp.message.middleware(DbSessionMiddleware())
+    dp.update.middleware(DbSessionMiddleware())
     dp.include_router(user_router)
 
     try:
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
+        await books_api.aclose() 
         await engine.dispose()
 
 
