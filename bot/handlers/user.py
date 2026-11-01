@@ -4,6 +4,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from repositories.user_repo import UserRepository
+from bot.keyboards.reply import get_main_menu
 
 router = Router(name="user")
 
@@ -30,4 +31,4 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
             f"Уровень: {user.level} · Опыт: {user.xp} XP"
         )
 
-    await message.answer(text)
+    await message.answer(text, reply_markup=get_main_menu())

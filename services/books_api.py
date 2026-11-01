@@ -14,6 +14,8 @@ from config.settings import settings
 logger = logging.getLogger(__name__)
 
 GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes"
+LANG_RESTRICT = "ru" 
+ALLOWED_LANGUAGES: frozenset[str] = frozenset({"ru", "en"})
 REQUEST_TIMEOUT = httpx.Timeout(10.0, connect=5.0)
 
 
@@ -29,6 +31,7 @@ class Book(BaseModel):
     average_rating: float | None = None
     thumbnail: str | None = None
     info_link: str | None = None
+    language: str | None = None
 
     @classmethod
     def from_volume(cls, volume: dict) -> "Book":
@@ -44,6 +47,7 @@ class Book(BaseModel):
             average_rating=info.get("averageRating"),
             thumbnail=image_links.get("thumbnail") or image_links.get("smallThumbnail"),
             info_link=info.get("infoLink"),
+            language=info.get("language"),
         )
 
     @property
@@ -83,15 +87,24 @@ class GoogleBooksAPI:
         response.raise_for_status()
         return response.json()
 
-    async def search_books(self, query: str, max_results: int = 5) -> list[Book]:
-        params = {
+    async def search_books(self, query: str, max_results: int = 10) -> list[Book]:
+        """Поиск книг. При недоступности API возвращает [] (graceful degradation)."""
+        base_params = {
             "q": query,
-            "maxResults": max(1, min(max_results, 40)),  
+            "maxResults": max(1, min(max_results, 40)),
             "key": settings.google_books_api_key,
             "printType": "books",
         }
+
         try:
-            payload = await self._fetch(params)
+            payload = await self._fetch({**base_params, "langRestrict": LANG_RESTRICT})
+
+            if not payload.get("items"):
+                logger.debug(
+                    "Пусто с langRestrict=%s (query=%r), повторяю без фильтра",
+                    LANG_RESTRICT, query,
+                )
+                payload = await self._fetch(base_params)
         except httpx.HTTPError as exc:
             logger.error("Google Books API недоступен (query=%r): %s", query, exc)
             return []
@@ -101,11 +114,27 @@ class GoogleBooksAPI:
         for volume in items:
             try:
                 books.append(Book.from_volume(volume))
-            except Exception as exc: 
+            except Exception as exc:  
                 logger.warning("Пропущен некорректный том: %s", exc)
-        return books
 
-    async def get_books_by_genre(self, genre: str, max_results: int = 5) -> list[Book]:
+        filtered = [
+            book for book in books
+            if book.language is None or book.language in ALLOWED_LANGUAGES
+        ]
+
+        if not filtered and books:
+            logger.warning(
+                "Отфильтрованы все %d книг по языку (query=%r, языки: %s). "
+                "Возвращаю без фильтра, чтобы не отдать пустоту.",
+                len(books),
+                query,
+                sorted({book.language or "?" for book in books}),
+            )
+            return books
+
+        return filtered
+
+    async def get_books_by_genre(self, genre: str, max_results: int = 10) -> list[Book]:
         return await self.search_books(f'subject:"{genre}"', max_results=max_results)
 
 

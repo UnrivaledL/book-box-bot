@@ -6,7 +6,7 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-from bot.handlers.user import router as user_router
+from bot.handlers import menu_router, recommendations_router, user_router
 from bot.middlewares.db import DbSessionMiddleware
 from config.settings import settings
 from database.engine import engine, init_db
@@ -29,8 +29,10 @@ async def main() -> None:
     )
 
     dp = Dispatcher()
-    dp.update.middleware(DbSessionMiddleware())
+    dp.update.middleware(DbSessionMiddleware())  
     dp.include_router(user_router)
+    dp.include_router(menu_router)
+    dp.include_router(recommendations_router)
 
     try:
         await dp.start_polling(bot)
