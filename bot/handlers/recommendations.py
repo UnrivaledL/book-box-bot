@@ -15,9 +15,9 @@ from bot.keyboards.inline import (
 )
 from bot.keyboards.reply import BTN_RECOMMEND
 from bot.states.recommendation import RecommendationStates
-from repositories.user_repo import UserRepository
 from repositories.wishlist_repo import WishlistRepository
 from services.book_service import book_service
+from models.user import User
 
 logger = logging.getLogger(__name__)
 router = Router(name="recommendations")
@@ -140,7 +140,7 @@ async def cb_next_book(callback: CallbackQuery, state: FSMContext) -> None:
     RecommendationStates.viewing_books, F.data.startswith("wishlist_add:")
 )
 async def cb_wishlist_add(
-    callback: CallbackQuery, state: FSMContext, session: AsyncSession
+    callback: CallbackQuery, state: FSMContext, session: AsyncSession, db_user: User | None = None
 ) -> None:
     index = int(callback.data.split(":", 1)[1])
     data = await state.get_data()
@@ -150,13 +150,11 @@ async def cb_wishlist_add(
         await callback.answer("Книга не найдена, выбери жанр заново", show_alert=True)
         return
 
-    user, _ = await UserRepository.get_or_create_user(
-        session=session,
-        tg_id=callback.from_user.id,
-        username=callback.from_user.username,
-        first_name=callback.from_user.first_name,
-    )
-    added = await WishlistRepository.add_book(session, user.id, books[index])
+    if db_user is None:
+        await callback.answer("Ошибка пользователя", show_alert=True)
+        return
+        
+    added = await WishlistRepository.add_book(session, db_user.id, books[index])
     await callback.answer(
         "❤️ Добавлено в избранное!" if added else "Эта книга уже в твоём списке 😉"
     )

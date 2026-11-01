@@ -6,7 +6,13 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-from bot.handlers import menu_router, quiz_router, recommendations_router, user_router
+from bot.handlers import (
+    menu_router,
+    profile_router,
+    quiz_router,
+    recommendations_router,
+    user_router,
+)
 from bot.middlewares.db import DbSessionMiddleware
 from config.settings import settings
 from database.engine import engine, init_db
@@ -33,7 +39,12 @@ async def main() -> None:
     dp.include_router(user_router)
     dp.include_router(menu_router)
     dp.include_router(recommendations_router)
-    dp.include_router(quiz_router) 
+    dp.include_router(quiz_router)
+    dp.include_router(profile_router)
+    
+    for r in dp.sub_routers:
+        names = [h.callback.__name__ for h in r.message.handlers]
+        print(f"[ROUTER] {r.name}: {names}")
 
     try:
         await dp.start_polling(bot)

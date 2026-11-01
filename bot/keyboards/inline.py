@@ -71,3 +71,20 @@ def get_quiz_result_keyboard() -> InlineKeyboardMarkup:
     builder.button(text="🔙 В меню", callback_data="main_menu")
     builder.adjust(1)
     return builder.as_markup()
+
+def get_profile_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🐱 Коллекция", callback_data="show_collection")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def get_collection_keyboard(owned_codes: set[str] | None = None) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for level in range(2, 11):
+        code = f"level_{level}"
+        if owned_codes and code in owned_codes:
+            builder.button(text=f"🐱 Уровень {level}", callback_data=f"ach_card:{code}")
+    builder.adjust(2)
+    builder.row(InlineKeyboardButton(text="🔙 Назад в профиль", callback_data="back_to_profile"))
+    return builder.as_markup()

@@ -6,9 +6,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.keyboards.reply import BTN_PROFILE, BTN_WISHLIST, get_main_menu 
-from repositories.user_repo import UserRepository
+from bot.keyboards.reply import BTN_WISHLIST, get_main_menu 
 from repositories.wishlist_repo import WishlistRepository
+from models.user import User
 
 router = Router(name="menu")
 
@@ -17,7 +17,8 @@ MENU_TEXT = (
     "📚 Подобрать книгу — рекомендации по жанрам\n"
     "🎮 Викторина — проверь себя и получи XP\n"
     "❤️ Хочу прочитать — твой список избранного\n"
-    "👤 Профиль — скоро!"
+    "👤 Профиль — уровень, опыт и коллекция\n"
+    "🏆 Топ-10 — лучшие читатели"
 )
 
 
@@ -39,14 +40,12 @@ async def cb_main_menu(callback: CallbackQuery, state: FSMContext) -> None:
 
 
 @router.message(F.text == BTN_WISHLIST)
-async def show_wishlist(message: Message, session: AsyncSession) -> None:
-    user, _ = await UserRepository.get_or_create_user(
-        session=session,
-        tg_id=message.from_user.id,
-        username=message.from_user.username,
-        first_name=message.from_user.first_name,
-    )
-    items = await WishlistRepository.get_wishlist(session, user.id)
+async def show_wishlist(message: Message, session: AsyncSession, db_user: User | None = None) -> None:
+    if db_user is None:
+        await message.answer("Ошибка: пользователь не найден")
+        return
+        
+    items = await WishlistRepository.get_wishlist(session, db_user.id)
 
     if not items:
         await message.answer(
@@ -64,8 +63,3 @@ async def show_wishlist(message: Message, session: AsyncSession) -> None:
             lines.append(f"{i}. <b>{title}</b> — {html.escape(item.authors)}")
 
     await message.answer("\n".join(lines), disable_web_page_preview=True)
-
-
-@router.message(F.text == BTN_PROFILE)          
-async def not_implemented(message: Message) -> None:
-    await message.answer("🛠 Этот раздел ещё в разработке — загляни чуть позже!")

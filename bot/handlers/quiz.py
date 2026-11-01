@@ -18,6 +18,7 @@ from bot.states.quiz import QuizStates
 from models.quiz import QuizQuestion
 from repositories.quiz_repo import QuizRepository
 from repositories.user_repo import UserRepository
+from services.achievement_service import check_level_achievements
 
 logger = logging.getLogger(__name__)
 router = Router(name="quiz")
@@ -112,6 +113,9 @@ async def finish_quiz(
         lines.append(f"🎉 Новый уровень! +{levels_gained}")
 
     await safe_edit(message, "\n".join(lines), get_quiz_result_keyboard())
+
+    if user is not None:
+        await check_level_achievements(session, user, message)    
 
 
 # ---------- вход ----------

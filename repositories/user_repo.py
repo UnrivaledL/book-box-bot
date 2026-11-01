@@ -51,3 +51,12 @@ class UserRepository:
 
         await session.commit()
         return user, levels_gained
+    
+    @staticmethod
+    async def get_top_users(session: AsyncSession, limit: int = 10) -> list[User]:
+        result = await session.execute(
+            select(User)
+            .order_by(User.level.desc(), User.xp.desc(), User.id.asc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())

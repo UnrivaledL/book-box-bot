@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, select
 
 from models.wishlist import WishlistItem
 
@@ -32,3 +33,12 @@ class WishlistRepository:
             .order_by(WishlistItem.added_at.desc())
         )
         return list(result.scalars().all())
+    
+    @staticmethod
+    async def count(session: AsyncSession, user_id: int) -> int:
+        result = await session.execute(
+            select(func.count())
+            .select_from(WishlistItem)
+            .where(WishlistItem.user_id == user_id)
+        )
+        return int(result.scalar_one())
