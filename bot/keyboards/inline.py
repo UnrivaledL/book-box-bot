@@ -45,3 +45,29 @@ def get_book_card_keyboard(book_index: int) -> InlineKeyboardMarkup:
     builder.button(text="🔙 К жанрам", callback_data="back_to_genres")
     builder.adjust(2, 1)
     return builder.as_markup()
+
+def get_quiz_options_keyboard(question_id: int, options: list[str]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for index, option in enumerate([opt for opt in options if opt][:4]):
+        builder.button(
+            text=f"{index + 1}. {option}"[:64],
+            callback_data=f"quiz_ans:{question_id}:{index}",
+        )
+    builder.adjust(1)  
+    return builder.as_markup()
+
+
+def get_next_question_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[
+            InlineKeyboardButton(text="Следующий вопрос ➡️", callback_data="quiz_next")
+        ]]
+    )
+
+
+def get_quiz_result_keyboard() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🔄 Играть ещё", callback_data="quiz_restart")
+    builder.button(text="🔙 В меню", callback_data="main_menu")
+    builder.adjust(1)
+    return builder.as_markup()

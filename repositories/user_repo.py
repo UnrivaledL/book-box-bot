@@ -32,3 +32,22 @@ class UserRepository:
         await session.commit()
         await session.refresh(user)
         return user, True
+    
+    @staticmethod
+    async def add_xp(
+        session: AsyncSession, tg_id: int, xp: int
+    ) -> tuple[User | None, int]:
+        result = await session.execute(select(User).where(User.tg_id == tg_id))
+        user = result.scalar_one_or_none()
+        if user is None:
+            return None, 0
+
+        user.xp += xp
+        levels_gained = 0
+        while user.xp >= max(user.level, 1) * 100:
+            user.xp -= max(user.level, 1) * 100
+            user.level += 1
+            levels_gained += 1
+
+        await session.commit()
+        return user, levels_gained

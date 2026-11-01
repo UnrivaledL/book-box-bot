@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.keyboards.reply import BTN_PROFILE, BTN_QUIZ, BTN_WISHLIST, get_main_menu
+from bot.keyboards.reply import BTN_PROFILE, BTN_WISHLIST, get_main_menu 
 from repositories.user_repo import UserRepository
 from repositories.wishlist_repo import WishlistRepository
 
@@ -15,8 +15,9 @@ router = Router(name="menu")
 MENU_TEXT = (
     "📦 <b>Коробка с книгами</b>\n\n"
     "📚 Подобрать книгу — рекомендации по жанрам\n"
+    "🎮 Викторина — проверь себя и получи XP\n"
     "❤️ Хочу прочитать — твой список избранного\n"
-    "🎮 Викторина и 👤 Профиль — скоро!"
+    "👤 Профиль — скоро!"
 )
 
 
@@ -65,6 +66,6 @@ async def show_wishlist(message: Message, session: AsyncSession) -> None:
     await message.answer("\n".join(lines), disable_web_page_preview=True)
 
 
-@router.message(F.text.in_({BTN_QUIZ, BTN_PROFILE}))
+@router.message(F.text == BTN_PROFILE)          
 async def not_implemented(message: Message) -> None:
     await message.answer("🛠 Этот раздел ещё в разработке — загляни чуть позже!")
